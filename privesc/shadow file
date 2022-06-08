@@ -1,0 +1,248 @@
+There are several different authentication schemes that can be used on Linux systems. The most commonly used and standard scheme is to perform authentication against the /etc/passwd and /etc/shadow files.
+
+/etc/shadow is a text file that contains information about the system’s users' passwords. It is owned by user root and group shadow, and has 640 permissions .
+/etc/shadow Format
+
+The /etc/shadow file contains one entry per line, each representing a user account. You can view the contents of the file, with a text editor or a command such as cat :
+
+sudo cat /etc/shadow
+
+Typically, the first line describes the root user, followed by the system and normal user accounts. New entries are appended at the end of the file.
+
+Each line of the /etc/shadow file contains nine comma-separated fields:
+
+mark:$6$.n.:17736:0:99999:7:::
+[--] [----] [---] - [---] ----
+|      |      |   |   |   |||+-----------> 9. Unused
+|      |      |   |   |   ||+------------> 8. Expiration date
+|      |      |   |   |   |+-------------> 7. Inactivity period
+|      |      |   |   |   +--------------> 6. Warning period
+|      |      |   |   +------------------> 5. Maximum password age
+|      |      |   +----------------------> 4. Minimum password age
+|      |      +--------------------------> 3. Last password change
+|      +---------------------------------> 2. Encrypted Password
++----------------------------------------> 1. Username
+
+    Username. The string you type when you log into the system. The user account that exist on the system.
+
+
+
+
+
+    Encrypted Password. The password is using the $type$salt$hashed format. $type is the method cryptographic hash algorithm and can have the following values:
+        $1$ – MD5
+        $2a$ – Blowfish
+        $2y$ – Eksblowfish
+        $5$ – SHA-256
+        $6$ – SHA-512
+
+
+
+
+    If the password field contains an asterisk (*) or exclamation point (!), the user will not be able to login to the system using password authentication. Other login methods like key-based authentication or switching to the user are still allowed.
+
+    In older Linux systems, the user’s encrypted password was stored in the /etc/passwd file.
+
+    Last password change. This is the date when the password was last changed. The number of days is counted since January 1, 1970 (epoch date).
+
+    Minimum password age. The number of days that must pass before the user password can be changed. Typically it is set to zero, which means that there is no minimum password age.
+
+    Maximum password age. The number of days after the user password must be changed. By default, this number is set to 99999.
+
+    Warning period. The number of days before the password expires during which the user is warned that the password must be changed.
+
+    Inactivity period. The number of days after the user password expires before the user account is disabled. Typically this field is empty.
+
+    Expiration date. The date when the account was disabled. It is represented as an epoch date.
+
+    Unused. This field is ignored. It is reserved for future use.
+
+The /etc/shadow file should not be edited by hand unless you know what you are doing. Always use a command that is designed for the purpose. For example, to change a user password, use the passwd command, and to change the password aging information, use the chage command.
+Example Entry
+
+Let’s take a look at the following example:
+
+
+
+linuxize:$6$zHvrJMa5Y690smbQ$z5zdL...:18009:0:120:7:14::
+
+
+
+The entry above contains information about the user “linuxize” password:
+
+    The password is encrypted with SHA-512 (the password is truncated for better readability).
+    The password was last changed on April 23, 2019 - 18009.
+    There is no minimum password age.
+    The password must be changed at least every 120 days.
+    The user will receive a warning message seven days before the password expiration date.
+    If the user doesn’t attempt to login to the system 14 days after the password is expired, the account will be disabled.
+    There is no account expiration date.
+
+Conclusion
+
+The /etc/shadow file keeps records about encrypted users' passwords, as well as other passwords related information.
+
+If you have any questions or feedback, feel free to leave a comment.
+
+
+
+
+
+
+
+
+
+Cracking password in shadow file
+
+
+
+
+unshadow passwd.txt shadow.txt > passwords.txt
+
+John can run on its own by just typing john plus whatever file you are using for input, but it's often much more useful to supply a wordlist. There are some wordlists available for use under the /usr/share/wordlists directory, but for now, we'll use sqlmap.txt since it is quite a nice list. Use the --wordlist flag to specify the list to use and pass in our input file
+
+
+john --wordlist=/usr/share/wordlists/sqlmap.txt passwords.txt
+Warning: detected hash type "md5crypt", but the string is also recognized as "aix-smd5"
+Use the "--format=aix-smd5" option to force loading these as that type instead
+Using default input encoding: UTF-8
+Loaded 7 password hashes with 7 different salts (md5crypt, crypt(3) $1$ [MD5 128/128 SSE2 4x3])
+Remaining 1 password hash
+Press 'q' or Ctrl-C to abort, almost any other key for status
+0g 0:00:00:51 DONE (2018-08-06 14:10) 0g/s 27478p/s 27478c/s 27478C/s Zzzzzzz1..zzzzzzzzzzzzzzz
+Session completed
+
+    Don't Miss: Use Leaked Password Databases to Create Brute-Force Wordlists
+
+We can see that John detects the type of hash used as md5crypt, also known as aix-smd5, and after a bit of time, it completes the session successfully. Now we can use the --show flag to display the cracked passwords that John successfully recovered:
+
+john --show passwords.txt
+sys:batman:3:3:sys:/dev:/bin/sh
+klog:123456789:103:104::/home/klog:/bin/false
+msfadmin:msfadmin:1000:1000:msfadmin,,,:/home/msfadmin:/bin/bash
+postgres:postgres:108:117:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash
+user:user:1001:1001:just a user,111,,:/home/user:/bin/bash
+service:service:1002:1002:,,,:/home/service:/bin/bash
+
+6 password hashes cracked, 1 left
+
+After the username in the first field, we can now see the cleartext password in the second field. It tells us that six out of seven password hashes were cracked; Depending on the hardware being used, the wordlist that's supplied, and the length and complexity of the passwords, various levels of success will be achieved.
+Cracking Hashes with Hashcat
+
+The next tool that we will look at is Hashcat. This is an extremely powerful hash-cracking tool with a ton of features and both CPU-based and GPU-based versions available. As of Hashcat v3.00, the CPU and GPU tools were merged, with the CPU-only version becoming Hashcat-legacy.
+
+    Don't Miss: How to Crack Passwords Using Hashcat
+
+Unlike John, the easiest way to use Hashcat is to only supply the password hashes themselves. Copy any hashes we want to crack into a new text file that we'll call hashes.txt:
+
+cat hashes.txt
+$1$/avpfBJ1$x0z8w5UF9Iv./DR9E9Lid.
+$1$fUX6BPOt$Miyc3UpOzQJqz4s5wFD9l0
+$1$f2ZVMS4K$R9XkI.CmLdHhdUE3X9jqP0
+$1$XN10Zj2c$Rt/zzCW3mLtUWA.ihZjA5/
+$1$Rw35ik.x$MgQgZUuO5pAoUvfJhfcYe/
+$1$HESu9xrH$k.o3G93DGoXIiQKkPmUgZ0
+$1$kR3ue7JZ$7GxELDupr5Ohp6cjZ3Bu//
+
+Hashcat contains numerous modes that it can run as depending on the type of hash being used. We saw earlier that John identified our shadow hashes as md5crypt, so we can type hashcat --help to display all the options for this tool as well as the different modes available. Down the list, we find that md5crypt is mode 500:
+
+0500 | md5crypt, MD5 (Unix), Cisco-IOS $1$ (MD5)        | Operating Systems
+3200 | bcrypt $2*$, Blowfish (Unix)                     | Operating Systems
+7400 | sha256crypt $5$, SHA256 (Unix)                   | Operating Systems
+1800 | sha512crypt $6$, SHA512 (Unix)                   | Operating Systems
+ 122 | macOS v10.4, MacOS v10.5, MacOS v10.6            | Operating Systems
+1722 | macOS v10.7                                      | Operating Systems
+7100 | macOS v10.8+ (PBKDF2-SHA512)                     | Operating Systems
+
+Run the following command to start cracking.
+
+hashcat -m 500 -a 0 -o cracked.txt hashes.txt /usr/share/wordlists/sqlmap.txt -O
+hashcat (v4.1.0) starting...
+
+* Device #2: Not a native Intel OpenCL runtime. Expect massive speed loss.
+             You can use --force to override, but do not report related errors.
+OpenCL Platform #1: Intel(R) Corporation
+========================================
+* Device #1: Intel(R) Core(TM) i5 CPU       M 480  @ 2.67GHz, 934/3736 MB allocatable, 4MCU
+
+OpenCL Platform #2: The pocl project
+====================================
+* Device #2: pthread-Intel(R) Core(TM) i5 CPU       M 480  @ 2.67GHz, skipped.
+
+Hashes: 7 digests; 7 unique digests, 7 unique salts
+Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
+Rules: 1
+
+Applicable optimizers:
+* Optimized-Kernel
+* Zero-Byte
+
+Let's break this down.
+
+    The -m flag specifies the mode we want to use.
+    The -a flag determines the attack type, in this case, 0 as the default straight mode.
+    Then we specify the output file as cracked.txt with the -o flag and pass in hashes.txt as our input file that contains the hashes. We can also use a wordlist just like we did before with John.
+    Finally, the -O flag enables optimized kernels (this may or may not need to be enabled depending on the system in use, just know that it does limit the password length).
+
+At any point while Hashcat is running, we can check the progress by simply typing s to display status:
+
+[s]tatus [p]ause [b]ypass [c]heckpoint [q]uit => s
+
+Session..........: hashcat
+Status...........: Running
+Hash.Type........: md5crypt, MD5 (Unix), Cisco-IOS $1$ (MD5)
+Hash.Target......: hashes.txt
+Time.Started.....: Mon Aug  6 14:18:10 2018 (30 secs)
+Time.Estimated...: Mon Aug  6 14:21:08 2018 (2 mins, 28 secs)
+Guess.Base.......: File (/usr/share/wordlists/sqlmap.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.Dev.#1.....:    15816 H/s (7.84ms) @ Accel:256 Loops:125 Thr:1 Vec:4
+Recovered........: 5/7 (71.43%) Digests, 5/7 (71.43%) Salts
+Progress.........: 1648627/9845703 (16.74%)
+Rejected.........: 3059/1648627 (0.19%)
+Restore.Point....: 234929/1406529 (16.70%)
+Candidates.#1....: 9dH8eJEs -> 9notenler
+HWMon.Dev.#1.....: N/A
+
+Once the process is almost finished, a message will be displayed followed by some information such as speed, the number of hashes recovered, and start and stop times.
+
+Approaching final keyspace - workload adjusted.
+
+Session..........: hashcat
+Status...........: Exhausted
+Hash.Type........: md5crypt, MD5 (Unix), Cisco-IOS $1$ (MD5)
+Hash.Target......: hashes.txt
+Time.Started.....: Mon Aug  6 14:18:10 2018 (2 mins, 59 secs)
+Time.Estimated...: Mon Aug  6 14:21:09 2018 (0 secs)
+Guess.Base.......: File (/usr/share/wordlists/sqlmap.txt)
+Guess.Queue......: 1/1 (100.00%)
+Speed.Dev.#1.....:    15738 H/s (8.15ms) @ Accel:256 Loops:125 Thr:1 Vec:4
+Recovered........: 5/7 (71.43%) Digests, 5/7 (71.43%) Salts
+Progress.........: 9845703/9845703 (100.00%)
+Rejected.........: 30891/9845703 (0.31%)
+Restore.Point....: 1406529/1406529 (100.00%)
+Candidates.#1....: zzbell0506 -> zzzzzzzzzzzzzzz
+HWMon.Dev.#1.....: N/A
+
+Started: Mon Aug  6 14:18:06 2018
+Stopped: Mon Aug  6 14:21:10 2018
+
+Now we can display the contents of cracked.txt and view the passwords in plaintext:
+
+cat cracked.txt
+$1$fUX6BPOt$Miyc3UpOzQJqz4s5wFD9l0:batman
+$1$Rw35ik.x$MgQgZUuO5pAoUvfJhfcYe/:postgres
+$1$kR3ue7JZ$7GxELDupr5Ohp6cjZ3Bu//:service
+$1$HESu9xrH$k.o3G93DGoXIiQKkPmUgZ0:user
+
+Online Hash Cracking
+
+The prevalence of cloud technologies and distributed computing brings a whole new angle to password cracking. Most of the time, hackers are running a virtual machine, laptop, or at best, a powerful desktop computer, but many online services utilize dedicated servers and resources for cracking hashes. Sites such as CrackStation, Online Hash Crack, and MD5/Sha1 Hash Cracker offer the convenience of password cracking right from the browser. None of these seemed to support the md5crypt hashes that we had, but it's easy to find support for many common hash formats such as MD5, SHA1, and LM.
+
+One last quick note: If you can't find the right hash format online, or even if you just want to possibly save some time, it certainly doesn't hurt to consult Google. Sometimes if you just search for the exact hash you are trying to crack, you can get results. Chances are if it's a default or common password, or if it's a hash that's been cracked before, you can find it in the search results. A quick Google search could end up saving you a lot of time and effort.
+Wrapping Up
+
+In this series, we learned how to use Metasploit to compromise a web server and get a low-level shell, used a kernel exploit to perform local privilege escalation and gain root-level access, and cracked some password hashes using John the Ripper and Hashcat. A lot of times, a system can be owned using this exact same process, only with different exploits and attack vectors. Now that you have some more tools and techniques under your belts, get out there and practice away. Happy hacking!
+
+
+
