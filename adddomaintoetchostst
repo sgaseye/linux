@@ -1,0 +1,1 @@
+echo "10.10.188.110 spookysec.local" | sudo tee -a  /etc/hosts

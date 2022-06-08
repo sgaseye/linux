@@ -1,0 +1,8 @@
+the folder you rigth now is carrying the executable that has to be installed in this virtual environment
+
+apt installl virtualenv
+virtualenv --python=python3 impacket 
+source impacket/bin/activate
+pip3 install .
+
+deactivate at end
