@@ -1,0 +1,39 @@
+RAR files are in compressed archive format, if you have downloaded rar files from the Internet, you need to unpack or unrar them (extract rar files). RAR is a proprietary file format for data compression and archiving. The command used to extract these files is called "unrar". By default, unrar is not being installed on Linux, FreeBSD or UNIX like operating system. You can install unrar command with the help of apt-get or yum command.
+
+Note- Kali Linux users can directly use unrar command as it is pre-installed in it.
+Install unrar command
+Under Debian(Kali) or Ubuntu Linux, you need to type apt-get command as follows to install unrar program:
+# apt-get install unrar
+If you are using Fedora core Linux / CentOS / RHEL, use yum command as follows :
+# yum install unrar
+If you are using FreeBSD, enter:
+# pkg_add -v -r unrar
+If any of above, methods is not working for you, download binary package from official rarlab site:
+$ cd /tmp
+$ wget http://www.rarlab.com/rar/rarlinux-3.6.0.tar.gz
+Next, untar file, enter:
+$ tar -zxvf rarlinux-3.6.0.tar.gz
+Both unrar and rar commands are located in rar sub-directory. Just cd to rar directory, type:
+$ cd rar
+$ ./unrar
+Now copy rar and unrar file to /bin directory, type:
+# cp rar unrar /bin
+How To Use unrar Command
+The unrar command supports various options, below are common options that you need to for extracting files.
+Extract rar (unpack) File
+To extract file.rar file into the current directory, enter:
+$ unrar e file.rar
+List (l) file inside rar archive
+$ unrar l file.rar
+To extract (x) files with full path type command
+$ unrar x file.rar
+To test (t) integrity of archive
+$ unrar t file.rar
+
+
+
+
+
+
+ALt +Prtscreen for screenshot
+

@@ -1,0 +1,88 @@
+What Are Shared Libraries?
+
+Shared libraries are pre-compiled C-code that are linked during the final steps of producing an executable. They provide reusable features like functions, routines, classes, data structures, etc., which can then be used while writing your own code.
+
+Common Shared Libraries which  Linux Contains are :
+
+    libc : The standard C library.
+    glibc : GNU Implementation of standard libc.
+    libcurl : Multiprotocol file transfer library.
+    libcrypt : C Library to facilitate encryption, hashing, encoding etc.
+
+The important thing to know about shared libraries is that they contain the addresses of various functions required by programs during runtime. 
+
+For example, when a dynamically linked executable issues a read() syscall, the system looks up the address of read() from the libc shared library. Now, libc has a well-defined definition for read(), which specifies the number and type of function parameters and expects a particular type of data in return. Usually, the system knows where to look for these functions, but as we will see later, we can control where the system looks for these functions and how we can leverage them for malicious purposes.
+TL;DR: Shared Libraries are compiled C code that contains function definitions which can be later called to perform certain functions. When we run dynamically linked executables, the system looks up the definitions of common functions in these libraries.
+
+There is a lot that can be said about shared libraries at this point. However, I don't want to make this too difficult for people and want to keep it beginner-friendly, but I definitely encourage people to read more about these!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+﻿This section will be a tad bit technical, so bear with me for a while. Take a break and have some coffee and once you are ready, head on:
+
+So far we have learned that :
+
+    When we execute a dynamically linked executable, it issues calls to certain standard functions which are predefined in shared libraries.
+    The system looks up the address of the function in the shared libraries.
+    The system returns the address of the first instance of the function as located in the shared library.
+    It then performs the required actions.
+
+Seems simple enough? Now let's get into the details. A large part of what's coming has been taken from the man page of ld.so, so it'll be helpful to have it handy.
+
+With that out of the way, let's go on:
+
+First, let's check the dynamically linked libraries needed by the ls command. To do this, you can type:
+
+# ldd `which ls`
+Or if you are using fish shell then:
+
+# ldd (which ls)
+
+Either way, it should give you an output similar to this: 
+
+# ldd /bin/ls        
+         linux-gate.so.1 (0xb7f54000)        
+         libselinux.so.1 => /lib/i386-linux-gnu/libselinux.so.1 (0xb7ed7000)        
+         libc.so.6 => /lib/i386-linux-gnu/libc.so.6 (0xb7cf9000)         
+         libdl.so.2 => /lib/i386-linux-gnu/libdl.so.2 (0xb7cf3000)
+         libpcre.so.3 => /lib/i386-linux-gnu/libpcre.so.3 (0xb7c7a000)
+         /lib/ld-linux.so.2 (0xb7f56000)
+         libpthread.so.0 => /lib/i386-linux-gnu/libpthread.so.0 (0xb7c59000)
+
+Note: This example was taken from an x86 Kali System, on a 64-bit system we will have different locations and libraries.
+
+Here, we find a library with the soname libc.so.6 which is located at /lib/i386-linux-gnu/libc.so.6.
+Note: These are just symbolic links to the real shared library files located somewhere else in the system.
+
+Our main objective here is to understand how the system's dynamic linker loads these dynamic libraries during launching a program. For this, we will heavily refer to the ld.so man page.
+
+In the man page, we find the following texts:
+
+    Using the directories specified in the DT_RPATH dynamic section attribute of the binary if  present  and  DT_RUNPATH  attribute does not exist.  Use of DT_RPATH is deprecated.
+    Using the environment variable LD_LIBRARY_PATH, unless the executable is being run in secure-execution mode (see  below),  in which case this variable is ignored.
+    Using  the directories specified in the DT_RUNPATH dynamic section attribute of the binary if present.  Such directories  are searched  only to find those objects required by DT_NEEDED (direct dependencies) entries and do not apply to  those  objects' children,  which  must themselves have their own DT_RUNPATH entries.  This is unlike DT_RPATH, which is applied  to  searches  for all children in the dependency tree.
+    From the cache file /etc/ld.so.cache, which contains a compiled list of candidate shared objects previously found in  the  augmented  library  path.  If, however, the binary was linked with the -z nodeflib linker option, shared objects in the default paths are skipped.  Shared objects installed in hardware capability directories (see below) are preferred to other  shared objects.
+    In  the  default path /lib, and then /usr/lib.  (On some 64-bit   architectures, the default paths for 64-bit shared objects  are /lib64,  and  then  /usr/lib64.)  If the binary was linked with the -z nodeflib linker option, this step is skipped.
+
+Yes, this part might be a tad bit complicated, don't sweat over it. Just know that there are some Environment Variables and System Paths where the dynamic linker looks for these shared libraries while running programs.
+
+The part which interests us lies a bit below under the LD_PRELOAD section. I encourage everyone to read the entire section (it's relatively short as well). The part which we should be paying attention to are the bullet points at the end of the section (especially the first and last ones) :
+
+              (1) The LD_PRELOAD environment variable.
+
+              (2) The --preload command-line option when invoking the dynamic linker directly.
+
+              (3) The /etc/ld.so.preload file.
+
+We are more interested in points (1) and (3) as they let us specify our own shared objects which are loaded BEFORE  other shared libraries, and much like similar PATH hijacking attacks, we are going to use these to create our very own malicious shared libraries!

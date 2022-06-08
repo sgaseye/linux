@@ -1,0 +1,62 @@
+Dir searching
+
+dirb http://<ip>:port 
+dirb -h
+
+dirsearch -e php,html,js,zip -u http://jeff.thm -r -R 3
+
+wfuzz -w wordlist/general/common.txt -w wordlist/general/common.txt --hc 404 http://testphp.vulnweb.com/FUZZ/FUZ2Z
+
+    • FUZ2Z – 2nd parameter 
+    • FUZ3Z – 3rd parameter 
+    • FUZ4Z – 4th parameter 
+
+
+
+
+
+
+
+wfuzz for subdomain searching
+
+wfuzz -c -w /usr/share/wordlists/SecLists-master/Discovery/DNS/subdomains-top1million-5000.txt -u 'http://jeff.thm' -H 'Host: FUZZ.jeff.thm' --hl 7
+
+or you you can go subcrack or sublister for listing subdomain
+
+
+
+
+
+
+
+
+
+files that must be checked in rev shell directory
+user   related or user incorporated dir
+privacy 
+admin
+backup
+config 
+
+ if wordpress  do see   :   wp-config , wp-content , wp-login , wp-admin , ftp-backup , sftp-backup , readme.html , license.txt etc
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ wordpress enum and exploitation 
+ 
+wpscan --url http://10.10.4.178 -P /home/goku/Desktop/wordlist.txt -U hakanbey01
+wpscan --url http://10.10.4.178 -P /usr/share/wordlists/rockyou.txt -U hakanbey01
+wpscan --url http://wordpress.jeff.thm --enumerate
+wpscan --url http://wordpress.jeff.thm --enumerate u
+wpscan --url http://wordpress.jeff.thm -e u
+
+you might get version (you can find expoit on net, searchsploit and metasploit) , directories , subdomains , subdirectories (like /wp-admin, /xmlrpc.php) , users with whome you can go for brute force
+
+
+wp-admin and wp-login are login pages 

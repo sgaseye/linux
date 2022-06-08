@@ -1,0 +1,46 @@
+
+nmap -sU -p 161 -n --script snmp-brute <IP> --script-args snmp-brute.communitiesdb=wordlist
+
+script = "snmp-interfaces" --script-args="snmpcommunity=<pass>"
+          snmp-netstat                     "
+          snmp-process                     "
+          snmap-sysdescr                   "
+          
+            
+There are native Kali tools for enumerating SNMP, including 
+snmp-walk, 
+snmp-check, and 
+onesixtyone. 
+Regardless, we require the community string (a user id or password that allows access to a router's or other device's statistics) and can obtain this via onesixtyone
+
+onesixtyone owl.thm -c /usr/share/seclists/Discovery/SNMP/snmp-onesixtyone.txt
+onesixtyone -c <pass list just name it to snmp_community_string><ip>
+
+
+The community string for this machine is openview. With this information we can use snmp-check to dump all available information from the machine.
+
+snmp-check -c <password/ pass list> $ip
+or snmp-check -c <password/ pass list> -t <ip>
+
+We can see the only unique username is Jareth. We can additionally see all valid listening TCP/UDP ports incase this information is not enough
+
+snmpwalk -v1 -c router_write <ip> snmp_dump
+this will give us snmp comunity strings and oid values
+oid = iso.1.2.3.4.53.2.24.0
+
+snmpset -v1 -c router_write <ip> iso < > s Hxed iso < > =STRING:"<string>"
+for oid = iso.1.2.3.4.53.2.24.0
+for iso = .1.2.3.4.53.2.24.0
+for msf oid it is equivalent to iso
+ 
+ v1 is version1
+ 
+
+
+braa snmp enum
+
+braa <community_stringi.e.passwd@ip>:port:oid_iso
+
+
+
+braa
